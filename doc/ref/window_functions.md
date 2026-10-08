@@ -1,0 +1,569 @@
+# Window Functions (26 Functions)
+
+Full-scan window functions. Each function returns one value per row. Do not use `GROUP BY`.
+
+← [Function Reference](../function_reference.md)
+
+## How to Call
+
+Every function in this category computes its result over the **whole partition**
+and returns the element for the current row. Call it with an `ORDER BY` in the
+`OVER` clause; `PARTITION BY` works as usual:
+
+```sql
+SELECT id, val,
+       stat_rank(val) OVER (ORDER BY id) AS r
+FROM ts_data
+ORDER BY id;
+
+SELECT grp, id, val,
+       stat_fillna_mean(val) OVER (PARTITION BY grp ORDER BY id) AS filled
+FROM grouped_ts
+ORDER BY grp, id;
+```
+
+- The `ORDER BY` fixes the row order the function sees (time order, for the
+  time-series functions). Use a **unique** key: the current row is identified as
+  the last row of its frame, and with the default frame rows that tie on the
+  key share the last tied row's result.
+- `OVER ()`, a full-partition frame (`ROWS BETWEEN UNBOUNDED PRECEDING AND
+  UNBOUNDED FOLLOWING`) and a call without `OVER` raise an error. DuckDB
+  evaluates those once for the whole partition, so no per-row result could be
+  returned.
+
+- A `NULL` parameter makes every row `NULL`, as SQL's `lag(v, NULL)` does.
+  How `NULL`, `NaN` and `Inf` values affect each kind of function is described
+  in [NULL, NaN and Inf Notes](../nan_notes.md#5-window-functions).
+
+> **Difference from sqlite3-stats**: the SQLite version required the
+> full-partition frame above. In DuckDB use `OVER (ORDER BY id)` instead.
+
+---
+
+## Rolling Statistics
+
+> **Note**: All functions in this category are implemented as **window functions** (full-scan type). Each returns one value per row. Do not use `GROUP BY`.
+
+### stat_rolling_mean
+
+Computes the **rolling mean** (moving average). Returns the average of the most recent n values within the specified window size for each row.
+
+**Syntax**: `stat_rolling_mean(column, window_size)`
+
+| Parameter | Description |
+|---|---|
+| `window_size` | Window size (integer) |
+
+> Row *i* covers rows *i*-window_size+1 .. *i* (the trailing window). Leading rows
+> with fewer values than the window size return `NULL`, as does any row whose window
+> contains a `NULL`. This applies to the whole rolling family and `stat_moving_avg`.
+
+```sql
+-- 3-day rolling mean
+SELECT date, price,
+       stat_rolling_mean(price, 3) OVER (ORDER BY date) AS rolling_avg
+FROM stock_prices
+ORDER BY date;
+
+-- Smoothing with a 7-day moving average
+SELECT timestamp, value,
+       stat_rolling_mean(value, 7) OVER (ORDER BY timestamp) AS smoothed
+FROM sensor_data
+ORDER BY timestamp;
+```
+
+---
+
+### stat_rolling_std
+
+Computes the **rolling standard deviation**.
+
+**Syntax**: `stat_rolling_std(column, window_size)`
+
+```sql
+SELECT date, price,
+       stat_rolling_std(price, 5) OVER (ORDER BY date) AS rolling_volatility
+FROM stock_prices
+ORDER BY date;
+```
+
+---
+
+### stat_rolling_min
+
+Computes the **rolling minimum**.
+
+**Syntax**: `stat_rolling_min(column, window_size)`
+
+```sql
+SELECT date, price,
+       stat_rolling_min(price, 20) OVER (ORDER BY date) AS min_20d
+FROM stock_prices
+ORDER BY date;
+```
+
+---
+
+### stat_rolling_max
+
+Computes the **rolling maximum**.
+
+**Syntax**: `stat_rolling_max(column, window_size)`
+
+```sql
+SELECT date, price,
+       stat_rolling_max(price, 20) OVER (ORDER BY date) AS max_20d
+FROM stock_prices
+ORDER BY date;
+```
+
+---
+
+### stat_rolling_sum
+
+Computes the **rolling sum**.
+
+**Syntax**: `stat_rolling_sum(column, window_size)`
+
+```sql
+-- 7-day cumulative sales
+SELECT date, sales,
+       stat_rolling_sum(sales, 7) OVER (ORDER BY date) AS weekly_total
+FROM daily_sales
+ORDER BY date;
+```
+
+---
+
+## Moving Averages
+
+### stat_moving_avg
+
+Computes the **simple moving average** (SMA). Equivalent to
+`stat_rolling_mean`, including for windows that contain `NULL`.
+
+The two differ only after an `Inf` value. `stat_moving_avg` sums each window
+separately, as R's `stats::filter()` does. `stat_rolling_mean` keeps a running
+sum, as R's `zoo::rollmean()` does, so every window after an `Inf` returns
+`NULL`.
+
+**Syntax**: `stat_moving_avg(column, window_size)`
+
+```sql
+SELECT date, close_price,
+       stat_moving_avg(close_price, 20) OVER (ORDER BY date) AS sma_20
+FROM stocks
+ORDER BY date;
+```
+
+---
+
+### stat_ema
+
+Computes the **exponential moving average** (EMA). A moving average that places greater weight on more recent data.
+
+$$\text{EMA}_t = \alpha \cdot x_t + (1-\alpha) \cdot \text{EMA}_{t-1}, \quad \alpha = \frac{2}{\text{span}+1}$$
+
+**Syntax**: `stat_ema(column, span)`
+
+| Parameter | Description |
+|---|---|
+| `span` | Span (integer). Same convention as pandas `ewm(span=N)` |
+
+```sql
+-- 12-day EMA (alpha = 2/13 ≈ 0.154)
+SELECT date, close_price,
+       stat_ema(close_price, 12) OVER (ORDER BY date) AS ema_12
+FROM stocks
+ORDER BY date;
+
+-- Comparing SMA and EMA
+SELECT date, close_price,
+       stat_moving_avg(close_price, 20) OVER (ORDER BY date) AS sma_20,
+       stat_ema(close_price, 20) OVER (ORDER BY date) AS ema_20
+FROM stocks
+ORDER BY date;
+```
+
+---
+
+## Rank
+
+### stat_rank
+
+Performs **rank transformation**. Returns the rank for each row's value. Tied values receive the average rank. NULL rows return NULL.
+
+**Syntax**: `stat_rank(column)`
+
+```sql
+-- Ranking scores
+SELECT name, score,
+       stat_rank(score) OVER (ORDER BY name) AS rank
+FROM students
+ORDER BY name;
+```
+
+---
+
+## Missing Value Imputation
+
+### stat_fillna_mean
+
+Fills NULL values with the **mean of non-NULL values**.
+
+**Syntax**: `stat_fillna_mean(column)`
+
+```sql
+SELECT id, value,
+       stat_fillna_mean(value) OVER (ORDER BY id) AS filled
+FROM measurements
+ORDER BY id;
+```
+
+---
+
+### stat_fillna_median
+
+Fills NULL values with the **median of non-NULL values**.
+
+**Syntax**: `stat_fillna_median(column)`
+
+```sql
+SELECT id, value,
+       stat_fillna_median(value) OVER (ORDER BY id) AS filled
+FROM measurements
+ORDER BY id;
+```
+
+---
+
+### stat_fillna_ffill
+
+Fills NULL values with the **most recent non-NULL value** (forward fill). Leading NULLs remain NULL.
+
+**Syntax**: `stat_fillna_ffill(column)`
+
+```sql
+-- Forward fill for time series data
+SELECT timestamp, sensor_value,
+       stat_fillna_ffill(sensor_value) OVER (ORDER BY timestamp) AS filled
+FROM sensor_data
+ORDER BY timestamp;
+```
+
+---
+
+### stat_fillna_bfill
+
+Fills NULL values with the **next non-NULL value** (backward fill). Trailing NULLs remain NULL.
+
+**Syntax**: `stat_fillna_bfill(column)`
+
+```sql
+SELECT timestamp, sensor_value,
+       stat_fillna_bfill(sensor_value) OVER (ORDER BY timestamp) AS filled
+FROM sensor_data
+ORDER BY timestamp;
+```
+
+---
+
+### stat_fillna_interp
+
+Fills NULL values using **linear interpolation**. Linearly interpolates between the surrounding non-NULL values.
+
+**Syntax**: `stat_fillna_interp(column)`
+
+```sql
+-- Linear interpolation for time series missing values
+SELECT timestamp, temperature,
+       stat_fillna_interp(temperature) OVER (ORDER BY timestamp) AS interpolated
+FROM hourly_data
+ORDER BY timestamp;
+```
+
+---
+
+## Encoding / Binning
+
+### stat_label_encode
+
+Performs **label encoding** on values. Sorts unique values and assigns integers starting from 0.
+
+**Syntax**: `stat_label_encode(column)`
+
+```sql
+-- Convert categorical values to numeric
+SELECT id, color,
+       stat_label_encode(color) OVER (ORDER BY id) AS encoded
+FROM products
+ORDER BY id;
+-- color=blue → 0, green → 1, red → 2 (sorted order)
+```
+
+---
+
+### stat_bin_width
+
+Performs **equal-width binning**. Divides the value range into n equal-width bins and returns the bin number (0 to n-1) each value belongs to.
+
+**Syntax**: `stat_bin_width(column, n_bins)`
+
+| Parameter | Description |
+|---|---|
+| `n_bins` | Number of bins (integer) |
+
+```sql
+-- Classify ages into 5 bins
+SELECT name, age,
+       stat_bin_width(age, 5) OVER (ORDER BY name) AS age_group
+FROM customers
+ORDER BY name;
+```
+
+---
+
+### stat_bin_freq
+
+Performs **equal-frequency binning** (quantile binning). Divides into n bins so that each bin contains approximately the same number of records.
+
+**Syntax**: `stat_bin_freq(column, n_bins)`
+
+| Parameter | Description |
+|---|---|
+| `n_bins` | Number of bins (integer) |
+
+```sql
+-- Binning based on quartiles
+SELECT name, income,
+       stat_bin_freq(income, 4) OVER (ORDER BY name) AS income_quartile
+FROM households
+ORDER BY name;
+```
+
+---
+
+## Time Series Transformations
+
+### stat_lag
+
+Applies a **lag** (delay). Returns the value from k rows earlier. The first k rows return NULL.
+
+**Syntax**: `stat_lag(column, k)`
+
+| Parameter | Description |
+|---|---|
+| `k` | Lag amount (integer, positive value) |
+
+```sql
+-- Get the previous period's value
+SELECT date, price,
+       stat_lag(price, 1) OVER (ORDER BY date) AS prev_price,
+       price - stat_lag(price, 1) OVER (ORDER BY date) AS price_change
+FROM stock_prices
+ORDER BY date;
+```
+
+---
+
+### stat_diff
+
+Computes **differencing**. Applies differencing of the specified order. The first `order` rows return NULL.
+
+**Syntax**: `stat_diff(column, order)`
+
+| Parameter | Description |
+|---|---|
+| `order` | Order of differencing (integer) |
+
+```sql
+-- First-order differencing (day-over-day change)
+SELECT date, price,
+       stat_diff(price, 1) OVER (ORDER BY date) AS daily_change
+FROM stock_prices
+ORDER BY date;
+
+-- Second-order differencing (acceleration)
+SELECT date, value,
+       stat_diff(value, 2) OVER (ORDER BY date) AS acceleration
+FROM time_series
+ORDER BY date;
+```
+
+---
+
+### stat_seasonal_diff
+
+Computes **seasonal differencing**. Returns the difference from the value `period` rows earlier. The first `period` rows return NULL.
+
+**Syntax**: `stat_seasonal_diff(column, period)`
+
+| Parameter | Description |
+|---|---|
+| `period` | Seasonal period (integer) |
+
+```sql
+-- Year-over-year comparison (monthly data, period 12)
+SELECT month, sales,
+       stat_seasonal_diff(sales, 12) OVER (ORDER BY month) AS yoy_change
+FROM monthly_sales
+ORDER BY month;
+
+-- Week-over-week same-day comparison (daily data, period 7)
+SELECT date, visitors,
+       stat_seasonal_diff(visitors, 7) OVER (ORDER BY date) AS wow_change
+FROM daily_traffic
+ORDER BY date;
+```
+
+---
+
+## Outlier Detection
+
+### stat_outliers_iqr
+
+Detects outliers using the **IQR method**. Values below Q1 - 1.5*IQR or above Q3 + 1.5*IQR are flagged as outliers (1.0); all others are flagged as normal (0.0). NULL rows return NULL.
+
+**Syntax**: `stat_outliers_iqr(column)`
+
+```sql
+-- Add outlier flags
+SELECT id, value,
+       stat_outliers_iqr(value) OVER (ORDER BY id) AS is_outlier
+FROM measurements
+ORDER BY id;
+
+-- Mean excluding outliers
+SELECT stat_mean(value) AS mean_without_outliers
+FROM (
+    SELECT value,
+           stat_outliers_iqr(value) OVER (ORDER BY id) AS is_outlier
+    FROM measurements
+)
+WHERE is_outlier = 0.0;
+```
+
+---
+
+### stat_outliers_zscore
+
+Detects outliers using the **Z-score method**. Values with |z| > 3 are flagged as outliers (1.0).
+
+**Syntax**: `stat_outliers_zscore(column)`
+
+```sql
+SELECT id, value,
+       stat_outliers_zscore(value) OVER (ORDER BY id) AS is_outlier
+FROM measurements
+ORDER BY id;
+```
+
+---
+
+### stat_outliers_mzscore
+
+Detects outliers using the **modified Z-score method**. A robust method that uses the median and MAD. Values with |modified Z-score| > 3.5 are flagged as outliers (1.0).
+
+**Syntax**: `stat_outliers_mzscore(column)`
+
+```sql
+-- Robust outlier detection
+SELECT id, value,
+       stat_outliers_mzscore(value) OVER (ORDER BY id) AS is_outlier
+FROM measurements
+ORDER BY id;
+
+-- Comparing 3 methods
+SELECT id, value,
+       stat_outliers_iqr(value) OVER (ORDER BY id) AS iqr,
+       stat_outliers_zscore(value) OVER (ORDER BY id) AS zscore,
+       stat_outliers_mzscore(value) OVER (ORDER BY id) AS mzscore
+FROM measurements
+ORDER BY id;
+```
+
+---
+
+## Robust Processing
+
+### stat_winsorize
+
+Performs **winsorization** (tail clipping). Clips extreme values at the specified percentile on both ends.
+
+**Syntax**: `stat_winsorize(column, percentile)`
+
+| Parameter | Description |
+|---|---|
+| `percentile` | Percentile for clipping (integer, e.g., 5 → clips at 5th and 95th percentiles) |
+
+```sql
+-- Winsorize at the 5th percentile
+SELECT id, value,
+       stat_winsorize(value, 5) OVER (ORDER BY id) AS winsorized
+FROM measurements
+ORDER BY id;
+
+-- Statistics after winsorization
+SELECT stat_mean(w) AS winsorized_mean
+FROM (
+    SELECT stat_winsorize(value, 10) OVER (ORDER BY id) AS w FROM measurements
+);
+```
+
+---
+
+## Multiple Testing Corrections
+
+| Function | Syntax | Description |
+|---|---|---|
+| `stat_bonferroni` | `stat_bonferroni(p)` | Bonferroni correction |
+| `stat_bh_correction` | `stat_bh_correction(p)` | Benjamini-Hochberg (FDR) |
+| `stat_holm_correction` | `stat_holm_correction(p)` | Holm (step-down) |
+
+Takes a column of p-values and returns the multiplicity-adjusted p-value
+**for each row**. Results match R's
+`p.adjust(p, method = "bonferroni" / "BH" / "holm")`.
+
+These are window functions rather than scalar functions because BH and Holm
+**enforce monotonicity across the entire set of p-values**: BH takes a cumulative
+minimum in descending p order, Holm a cumulative maximum in ascending order.
+A scalar function that sees only one row cannot express this.
+
+> **Important**: call these with `OVER (ORDER BY <unique key>)` as described in
+> [How to Call](#how-to-call). `OVER ()` raises an error.
+
+**Syntax**:
+
+```sql
+stat_bh_correction(p) OVER (
+    ORDER BY id
+)
+```
+
+**NULL handling**: NULL rows are excluded from the correction and remain
+NULL in the output.
+
+```sql
+-- Apply FDR control across many test results
+SELECT gene, p_value,
+       stat_bh_correction(p_value) OVER (
+           ORDER BY id
+       ) AS q_value
+FROM gene_tests
+ORDER BY p_value;
+
+-- Keep only those significant after correction
+SELECT * FROM (
+    SELECT gene, p_value,
+           stat_holm_correction(p_value) OVER (
+               ORDER BY id
+           ) AS p_adj
+    FROM gene_tests
+) WHERE p_adj < 0.05;
+```
+
+To adjust a single p-value when the number of tests is known, use the
+scalar form
+[`stat_bonferroni_scalar(p, m)`](scalar_tests_helpers.md#multiple-testing-corrections).
+
+---
