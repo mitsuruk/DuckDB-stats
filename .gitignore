@@ -125,3 +125,6 @@ data/
 
 # Serena
 .serena/
+
+# work files
+statcpp_coverage_analysis-ja.md
