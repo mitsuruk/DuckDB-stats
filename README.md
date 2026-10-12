@@ -105,6 +105,9 @@ The extension is unsigned, and it is built with DuckDB's C++ extension API, so i
 LOAD './build/ext_funcs.duckdb_extension';
 ```
 
+The official duckdb CLI on macOS refuses a relative path ("relative path not allowed in hardened
+program"). Give the absolute path instead, e.g. `duckdb -unsigned -cmd "LOAD '$PWD/build/ext_funcs.duckdb_extension'"`.
+
 #### From C++
 
 ```cpp
@@ -162,6 +165,36 @@ SELECT stat_normal_quantile(0.975, 0, 1);  -- 1.96
 SELECT stat_n_t2(0.5, 0.8, 0.05);  -- effect size=0.5, power=0.80, alpha=0.05
 ```
 
+## Sample Database
+
+`tests/sample/` contains a small data set and queries that you can run as they are,
+to see what the extension does at a glance:
+
+| File | Contents |
+| --- | --- |
+| `sample_data.sql` | Table `students`: exam results of 100 students (`id`, `class`, `study_hours`, `score`) |
+| `sample_queries.sql` | Seven queries: descriptive statistics, `GROUP BY`, a two-sample test, correlation and regression, window functions, and a distribution function |
+
+The score rises with study time, class B scores higher on average, and three unusual
+results are planted. Run from the project root after building:
+
+```bash
+duckdb -unsigned \
+    -cmd "LOAD '$PWD/build/ext_funcs.duckdb_extension'" \
+    -c ".read tests/sample/sample_data.sql" \
+    -c ".read tests/sample/sample_queries.sql"
+```
+
+Selected results (DuckDB v1.5.6):
+
+| Question | Function | Result |
+| --- | --- | --- |
+| Typical score | `stat_mean`, `stat_median` | mean 65.52, median 68.0 |
+| Does class B score higher? | `stat_t_test_welch` | p = 0.013 (significant), Cohen's d = -0.51 |
+| Does studying pay off? | `stat_pearson_r`, `stat_simple_regression` | r = 0.638, +4.07 points per hour |
+| Which scores are outliers? | `stat_outliers_iqr` (window) | students 88 and 64 (scores 9 and 14) |
+| Share above 80 under a normal model | `stat_normal_cdf` | 0.202 (observed 0.20) |
+
 ## Common Specifications
 
 - **NULL handling**: NULL values are silently ignored in all aggregate and window functions.
@@ -216,6 +249,7 @@ DuckDB-stats/
 ├── mkdocs.yml                             # Documentation site (mkdocs serve)
 ├── tests/
 │   ├── test_helpers.hpp                   # Google Test fixture and helpers
+│   ├── sample/                            # Sample database and queries (100 students)
 │   ├── basic_aggregates_test.cpp          # 24 functions, 63 tests
 │   ├── parameterized_aggregates_test.cpp  # 20 functions, 53 tests
 │   ├── two_column_aggregates_test.cpp     # 27 functions, 58 tests
@@ -284,7 +318,8 @@ This project is released under the MIT License.
 This project was developed with the help of the following tools and AI assistants:
 
 - **[statcpp](https://github.com/mitsuruk/statcpp)** — C++17 header-only statistics library (386 functions)
-- **Claude Code for VS Code** — Suggested corrections to the English grammar and wording in the documentation, the code comments, and the English names of variables.
+- **Claude Code for VS Code** — Suggested corrections to the English grammar and wording in the documentation, the code comments, and the English names of variables, and created the data for the SQL tests.
 
+---
 
 **Disclaimer**: This library does not guarantee numerical stability or edge-case handling at the level of commercial statistical software. For research or production use, cross-validation with established tools such as R or Python/SciPy is recommended.

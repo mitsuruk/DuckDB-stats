@@ -105,6 +105,9 @@ ctest --test-dir build --output-on-failure
 LOAD './build/ext_funcs.duckdb_extension';
 ```
 
+macOS の公式配布の duckdb CLI は相対パスを拒否します("relative path not allowed in hardened program")。
+その場合は `duckdb -unsigned -cmd "LOAD '$PWD/build/ext_funcs.duckdb_extension'"` のように絶対パスを渡します。
+
 #### C++ から
 
 ```cpp
@@ -162,6 +165,35 @@ SELECT stat_normal_quantile(0.975, 0, 1);  -- 1.96
 SELECT stat_n_t2(0.5, 0.8, 0.05);  -- 効果量=0.5, 検出力=0.80, alpha=0.05
 ```
 
+## サンプルデータベース
+
+`tests/sample/` には、そのまま実行できる小さなデータとクエリを用意しています。拡張機能で何ができるかをすぐに確かめられます:
+
+| ファイル | 内容 |
+| --- | --- |
+| `sample_data.sql` | テーブル `students`: 生徒 100 人の試験成績(`id`、`class`、`study_hours`、`score`) |
+| `sample_queries.sql` | 7 つのクエリ: 記述統計、`GROUP BY`、2 標本の検定、相関と回帰、ウィンドウ関数、分布関数 |
+
+点数は学習時間とともに上がり、クラス B の平均点が高く、特異な結果を 3 件仕込んであります。
+ビルド後、プロジェクトのルートで実行します:
+
+```bash
+duckdb -unsigned \
+    -cmd "LOAD '$PWD/build/ext_funcs.duckdb_extension'" \
+    -c ".read tests/sample/sample_data.sql" \
+    -c ".read tests/sample/sample_queries.sql"
+```
+
+主な結果(DuckDB v1.5.6):
+
+| 問い | 関数 | 結果 |
+| --- | --- | --- |
+| 代表的な点数は? | `stat_mean`、`stat_median` | 平均 65.52、中央値 68.0 |
+| クラス B の方が高いか? | `stat_t_test_welch` | p = 0.013(有意)、Cohen's d = -0.51 |
+| 勉強は点数につながるか? | `stat_pearson_r`、`stat_simple_regression` | r = 0.638、1 時間あたり +4.07 点 |
+| 外れ値はどれか? | `stat_outliers_iqr`(ウィンドウ関数) | 生徒 88 と 64(9 点と 14 点) |
+| 正規分布を仮定したときの 80 点超の割合 | `stat_normal_cdf` | 0.202(実際は 0.20) |
+
 ## 共通仕様
 
 - **NULL の扱い**: すべての集約関数・ウィンドウ関数で NULL 値は暗黙的に無視されます。
@@ -216,6 +248,7 @@ DuckDB-stats/
 ├── mkdocs.yml                             # ドキュメントサイト（mkdocs serve）
 ├── tests/
 │   ├── test_helpers.hpp                   # Google Test フィクスチャ・ヘルパー
+│   ├── sample/                            # サンプルデータベースとクエリ(生徒 100 人)
 │   ├── basic_aggregates_test.cpp          # 24 関数, 63 テスト
 │   ├── parameterized_aggregates_test.cpp  # 20 関数, 53 テスト
 │   ├── two_column_aggregates_test.cpp     # 27 関数, 58 テスト
@@ -284,6 +317,8 @@ DuckDB-stats は **statcpp ファミリー** の一部です。用途に応じ�
 このプロジェクトの開発には以下のツールと AI アシスタントを活用しています:
 
 - **[statcpp](https://github.com/mitsuruk/statcpp)** — C++17 ヘッダーオンリー統計ライブラリ（386 関数）
-- **Claude Code for VS Code** — ドキュメントの英文法,表現の誤り,コード内のコメント,変数名の英語名の訂正案を作成しています
+- **Claude Code for VS Code** — ドキュメントの英文法,表現の誤り,コード内のコメント,変数名の英語名の訂正案,SQL テスト用のデータを作成しています
+
+---
 
 **免責事項**: このライブラリは数値安定性や極端なエッジケースへの対応において、商用の統計ソフトウェアと同等のレベルを保証するものではありません。研究や本番環境で結果を使用する場合は、R や Python/SciPy などの確立されたツールとのクロスバリデーションを推奨します。
