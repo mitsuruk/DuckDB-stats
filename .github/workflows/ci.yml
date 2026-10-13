@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DUCKDB_VERSION: "1.5.6"
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            compiler: clang
+            cli_asset: duckdb_cli-osx-universal.zip
+          - os: ubuntu-24.04
+            compiler: gcc
+            cli_asset: duckdb_cli-linux-amd64.zip
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} (${{ matrix.compiler }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja googletest
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtest-dev libgmock-dev
+
+      # Building DuckDB from source takes 20-40 minutes; cache the installed library.
+      # cmake/DuckDB_C_CPP.cmake skips the build when the install directory exists.
+      - name: Cache DuckDB build
+        uses: actions/cache@v4
+        with:
+          path: download/DuckDB/DuckDB_C_CPP-install
+          key: duckdb-${{ env.DUCKDB_VERSION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('cmake/DuckDB_C_CPP.cmake') }}
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTAT_TESTS=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Google Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Integration tests
+        working-directory: build
+        run: ./a.out
+
+      # Load the extension into the official duckdb CLI release, which is how users run it.
+      # The CLI refuses a relative extension path, so pass an absolute one.
+      - name: Sample queries with the official duckdb CLI
+        run: |
+          curl -fsSL -o duckdb_cli.zip \
+            "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/${{ matrix.cli_asset }}"
+          unzip -q -o duckdb_cli.zip -d duckdb_cli
+          ./duckdb_cli/duckdb --version
+          ./duckdb_cli/duckdb -unsigned \
+            -cmd "LOAD '$PWD/build/ext_funcs.duckdb_extension'" \
+            -c ".read tests/sample/sample_data.sql" \
+            -c ".read tests/sample/sample_queries.sql"

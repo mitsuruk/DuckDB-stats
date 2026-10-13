@@ -2,6 +2,7 @@
 
 A loadable extension that adds **259 statistical functions** to DuckDB.
 
+[![CI](https://github.com/mitsuruk/DuckDB-stats/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mitsuruk/DuckDB-stats/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-v1.5.6-yellow.svg)](https://duckdb.org/)
@@ -243,6 +244,7 @@ Detailed documentation for all 259 functions:
 
 ```text
 DuckDB-stats/
+├── .github/workflows/ci.yml               # CI (GitHub Actions: macOS, Ubuntu)
 ├── CMakeLists.txt
 ├── LICENSE
 ├── README.md                              # This file
@@ -302,6 +304,8 @@ DuckDB-stats is part of the **statcpp family**:
 - The extension also loads into the official duckdb CLI v1.5.6 release for macOS
 - Ubuntu 24.04 (arm64, Parallels VM and Docker) + GCC 13.2 / 13.3, DuckDB v1.5.6 built from source; the extension loads into the official
   duckdb CLI v1.5.6 release for Linux
+- CI (GitHub Actions): every push and pull request to `main` builds and tests on `macos-latest` (arm64) and
+  `ubuntu-24.04` (x86_64), and loads the extension into the official duckdb CLI v1.5.6
 - Windows (MSVC) is not supported
 
 ## License

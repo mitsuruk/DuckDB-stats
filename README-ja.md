@@ -2,6 +2,7 @@
 
 DuckDB に **259 個の統計関数** を追加するロード可能な拡張機能です。
 
+[![CI](https://github.com/mitsuruk/DuckDB-stats/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mitsuruk/DuckDB-stats/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-v1.5.6-yellow.svg)](https://duckdb.org/)
@@ -242,6 +243,7 @@ duckdb -unsigned \
 
 ```text
 DuckDB-stats/
+├── .github/workflows/ci.yml               # CI(GitHub Actions: macOS、Ubuntu)
 ├── CMakeLists.txt
 ├── LICENSE
 ├── README.md                              # 英語版 README
@@ -300,6 +302,8 @@ DuckDB-stats は **statcpp ファミリー** の一部です。用途に応じ�
 - macOS (Apple Silicon) + Apple Clang 21.0.0、ソースからビルドした DuckDB v1.5.6
 - 公式配布の duckdb CLI v1.5.6（macOS）へのロードも確認済み
 - Ubuntu 24.04 (arm64、Parallels の VM と Docker) + GCC 13.2 / 13.3、ソースからビルドした DuckDB v1.5.6。公式配布の duckdb CLI v1.5.6（Linux）へのロードも確認済み
+- CI(GitHub Actions): `main` への push と PR のたびに、`macos-latest`(arm64)と `ubuntu-24.04`(x86_64)で
+  ビルドとテストを行い、公式の duckdb CLI v1.5.6 への拡張のロードを確認する
 - Windows (MSVC) は対象外
 
 ## ライセンス
