@@ -40,7 +40,8 @@ All 259 functions are verified by 266 integration tests and 451 Google Test auto
 
 ### Prerequisites
 
-- CMake 3.20 or later, and Ninja (`brew install ninja`)
+- CMake 3.20 or later, and Ninja (macOS: `brew install ninja`, Ubuntu: `sudo apt install ninja-build`)
+- 8 GB of memory or more to build DuckDB from source (CMake compiles it with 4 parallel jobs)
 - C++17 compiler: Apple Clang 17+ or GCC 13+
 - DuckDB v1.5.6 (built from source automatically by CMake)
 - [statcpp](https://github.com/mitsuruk/statcpp) (downloaded automatically by CMake)
@@ -299,7 +300,8 @@ DuckDB-stats is part of the **statcpp family**:
 
 - macOS (Apple Silicon) + Apple Clang 21.0.0, DuckDB v1.5.6 built from source
 - The extension also loads into the official duckdb CLI v1.5.6 release for macOS
-- Linux is supported by the build but has not been tested
+- Ubuntu 24.04 (arm64, Parallels VM and Docker) + GCC 13.2 / 13.3, DuckDB v1.5.6 built from source; the extension loads into the official
+  duckdb CLI v1.5.6 release for Linux
 - Windows (MSVC) is not supported
 
 ## License

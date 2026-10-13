@@ -615,10 +615,47 @@ target_include_directories(ext_funcs SYSTEM PRIVATE
 # The entry point symbol is ext_funcs_duckdb_cpp_init (DUCKDB_CPP_EXTENSION_ENTRY
 # in ext_funcs.cpp): the extension name must match the file name.
 
-# macOS: leave DuckDB symbols undefined, to be resolved from the host at load time
-# (Linux allows undefined symbols in a shared object by default)
+# macOS: leave DuckDB symbols undefined, to be resolved from the host at load time.
+# The official duckdb CLI for macOS exports DuckDB's C++ symbols, so this works.
 if(APPLE)
     target_link_options(ext_funcs PRIVATE -undefined dynamic_lookup)
+endif()
+
+# Linux: the official duckdb CLI exports no DuckDB symbols, so an extension that
+# leaves them undefined cannot be loaded. Link DuckDB statically into the
+# extension instead, as DuckDB builds its own Linux extensions
+# (EXTENSION_STATIC_BUILD in DuckDB's extension_build_tools.cmake):
+# - hidden visibility keeps our symbols private; the entry point is exported by
+#   DUCKDB_CPP_EXTENSION_ENTRY (visibility "default")
+# - --exclude-libs,ALL keeps the bundled DuckDB symbols private, so they do not
+#   clash with a host that links libduckdb itself (a.out, stat_tests)
+# - the dummy extension loader stands in for the built-in extension loader, which
+#   is left out together with jemalloc: the host provides both
+# - --no-undefined turns a missing DuckDB symbol into a link error rather than a
+#   LOAD error
+if(UNIX AND NOT APPLE)
+    # libduckdb_*.a are DuckDB's bundled third-party libraries (fmt, re2, ...)
+    file(GLOB DUCKDB_STATIC_DEPS "${DUCKDB_INSTALL_DIR}/lib/libduckdb_*.a")
+    list(REMOVE_ITEM DUCKDB_STATIC_DEPS
+        "${DUCKDB_INSTALL_DIR}/lib/libduckdb_static.a"
+        "${DUCKDB_INSTALL_DIR}/lib/libduckdb_generated_extension_loader.a"
+        "${DUCKDB_INSTALL_DIR}/lib/libduckdb_jemalloc.a"
+    )
+    set_target_properties(ext_funcs PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+    )
+    target_link_libraries(ext_funcs PRIVATE
+        -Wl,--start-group
+        ${DUCKDB_INSTALL_DIR}/lib/libduckdb_static.a
+        ${DUCKDB_INSTALL_DIR}/lib/libdummy_static_extension_loader.a
+        ${DUCKDB_STATIC_DEPS}
+        -Wl,--end-group
+        Threads::Threads
+        -Wl,--gc-sections
+        -Wl,--exclude-libs,ALL
+        -Wl,--no-undefined
+    )
 endif()
 
 # The raw module gets a different suffix; the loadable file is a stamped copy

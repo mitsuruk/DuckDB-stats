@@ -40,7 +40,8 @@ DuckDB-stats は、SQL から直接呼び出せる 259 個の統計関数を提�
 
 ### 前提条件
 
-- CMake 3.20 以上、および Ninja（`brew install ninja`）
+- CMake 3.20 以上、および Ninja（macOS: `brew install ninja`、Ubuntu: `sudo apt install ninja-build`）
+- DuckDB をソースからビルドするため 8 GB 以上のメモリ（CMake は 4 並列でコンパイルする）
 - C++17 コンパイラ: Apple Clang 17 以上 または GCC 13 以上
 - DuckDB v1.5.6（CMake がソースから自動ビルド）
 - [statcpp](https://github.com/mitsuruk/statcpp)（CMake が自動ダウンロード）
@@ -298,7 +299,7 @@ DuckDB-stats は **statcpp ファミリー** の一部です。用途に応じ�
 
 - macOS (Apple Silicon) + Apple Clang 21.0.0、ソースからビルドした DuckDB v1.5.6
 - 公式配布の duckdb CLI v1.5.6（macOS）へのロードも確認済み
-- Linux はビルド構成上は対応しているが未検証
+- Ubuntu 24.04 (arm64、Parallels の VM と Docker) + GCC 13.2 / 13.3、ソースからビルドした DuckDB v1.5.6。公式配布の duckdb CLI v1.5.6（Linux）へのロードも確認済み
 - Windows (MSVC) は対象外
 
 ## ライセンス

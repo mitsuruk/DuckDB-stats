@@ -237,6 +237,8 @@ function」で失敗する。
 - C++17、`-Wall -Wextra -Wpedantic`
 - DuckDB のヘッダーは `SYSTEM` ヘッダーとしてインクルードし、DuckDB 自身の警告をビルドに混ぜない
 - macOS: `-undefined dynamic_lookup`(DuckDB のシンボルはロード時にホストから解決される)
+- Linux: DuckDB を拡張に静的リンクする。hidden visibility、`--exclude-libs,ALL`、`--gc-sections`、
+  `--no-undefined` を指定する(「DuckDB のシンボル」の節を参照)
 
 ---
 
@@ -397,9 +399,21 @@ nm -gU build/ext_funcs.duckdb_extension_raw | grep init
 
 ### DuckDB のシンボル
 
-拡張は DuckDB をリンクしない。macOS では `-undefined dynamic_lookup` でリンクし、参照する 32 個の DuckDB
+macOS では、拡張は DuckDB をリンクしない。`-undefined dynamic_lookup` でリンクし、参照する 32 個の DuckDB
 シンボルはロード時にホストプロセス(duckdb CLI、または `libduckdb` をリンクしたプログラム)から解決される。
-Linux の共有オブジェクトは既定で未定義シンボルを持てる。
+macOS の公式 duckdb CLI は DuckDB の C++ シンボルを公開しているため、これで動く。
+
+Linux では同じ方法は使えない。Linux の公式 duckdb CLI はシンボルを 1 つも公開しておらず、`LOAD` は
+`undefined symbol: _ZTIN6duckdb18BaseScalarFunctionE` などで失敗する。そこで DuckDB 自身の Linux 用拡張と同じく
+(DuckDB の `extension_build_tools.cmake` の `EXTENSION_STATIC_BUILD`)、DuckDB を静的リンクする:
+
+- `libduckdb_static.a`、`libdummy_static_extension_loader.a`、同梱のサードパーティ製ライブラリ(`libduckdb_*.a`)を
+  リンクする。組み込みの拡張ローダーと jemalloc はホストが持つため除く
+- hidden visibility と `--exclude-libs,ALL` で、エントリポイント以外のシンボルをすべて非公開にする。
+  これにより、同梱した DuckDB が `libduckdb` をリンクしたホスト(`a.out`、`stat_tests`)と衝突しない
+- `--no-undefined` で、シンボルの不足を `LOAD` 時ではなくリンク時に検出する
+
+Linux の拡張は約 2 MB ではなく約 37 MB になる。
 
 ```bash
 otool -L build/ext_funcs.duckdb_extension_raw

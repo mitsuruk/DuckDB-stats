@@ -238,6 +238,8 @@ module after every build (so a rebuild never stacks a second footer):
 - C++17, `-Wall -Wextra -Wpedantic`
 - DuckDB headers are included as `SYSTEM` headers so their own warnings stay out of the build
 - macOS: `-undefined dynamic_lookup` (DuckDB symbols are resolved from the host when loaded)
+- Linux: DuckDB is linked statically into the extension, with hidden visibility, `--exclude-libs,ALL`,
+  `--gc-sections` and `--no-undefined` (see [DuckDB Symbols](#duckdb-symbols))
 
 ---
 
@@ -403,9 +405,23 @@ nm -gU build/ext_funcs.duckdb_extension_raw | grep init
 
 ### DuckDB Symbols
 
-The extension does not link DuckDB. On macOS it is linked with `-undefined dynamic_lookup`, and the 32 DuckDB
+On macOS the extension does not link DuckDB. It is linked with `-undefined dynamic_lookup`, and the 32 DuckDB
 symbols it references are resolved from the host process when it is loaded: the duckdb CLI, or a program that
-links `libduckdb`. On Linux a shared object may have undefined symbols by default.
+links `libduckdb`. The official duckdb CLI for macOS exports DuckDB's C++ symbols, so this works.
+
+On Linux the same approach fails: the official duckdb CLI for Linux exports no symbols at all, and `LOAD` stops
+with `undefined symbol: _ZTIN6duckdb18BaseScalarFunctionE` or similar. The extension therefore links DuckDB
+statically, as DuckDB builds its own Linux extensions (`EXTENSION_STATIC_BUILD` in DuckDB's
+`extension_build_tools.cmake`):
+
+- `libduckdb_static.a`, `libdummy_static_extension_loader.a` and the bundled third-party libraries
+  (`libduckdb_*.a`) are linked; the built-in extension loader and jemalloc are left out, since the host
+  provides them
+- hidden visibility and `--exclude-libs,ALL` keep every symbol private except the entry point, so the bundled
+  copy does not clash with a host that links `libduckdb` (`a.out`, `stat_tests`)
+- `--no-undefined` reports a missing symbol at link time instead of at `LOAD`
+
+The Linux extension is about 37 MB instead of about 2 MB.
 
 ```bash
 otool -L build/ext_funcs.duckdb_extension_raw

@@ -32,6 +32,10 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Google Test suite (451 tests) and the integration runner `a.out` (266 demos). The suite
   includes the tests of sqlite3-stats, value tests for the rolling family, `stat_moving_avg`
   and `stat_lag`, and tests for the `NULL`, NaN and Inf rules above.
+- On Linux, DuckDB is linked statically into the extension, as DuckDB's own Linux extensions are,
+  because the official duckdb CLI for Linux exports no symbols. The extension loads into the
+  official CLI v1.5.6 on Ubuntu 24.04.
+- `tests/sample/`: a 100-row sample database and seven queries that can be run as they are.
 
 ### Changed (compared with sqlite3-stats)
 

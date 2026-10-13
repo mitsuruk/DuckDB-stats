@@ -26,6 +26,9 @@ DuckDB-stats の変更履歴を記録する。
 - `doc/nan_notes.md` / `doc/nan_notes-ja.md`: `NULL`、NaN、Inf の扱いを関数の種類ごとにまとめた。
 - Google Test スイート(451 件)と結合テストランナー `a.out`(デモ 266 件)。スイートには sqlite3-stats のテスト、
   ローリング統計量・`stat_moving_avg`・`stat_lag` の値のテスト、上記の `NULL`・NaN・Inf の規則のテストを含む。
+- Linux では、DuckDB 自身の Linux 用拡張と同じく、DuckDB を拡張に静的リンクする。
+  Linux の公式 duckdb CLI はシンボルを公開しないため。Ubuntu 24.04 の公式 CLI v1.5.6 にロードできる。
+- `tests/sample/`: そのまま実行できる 100 件のサンプルデータベースと 7 つのクエリ。
 
 ### 変更(sqlite3-stats との違い)
 
