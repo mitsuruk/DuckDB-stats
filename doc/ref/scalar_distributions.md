@@ -261,7 +261,7 @@ SELECT stat_n_prop(0.5, 0.3, 0.8, 0.05);
 
 ---
 
-## Sample Size / Margin of Error
+## Sample Size and Margin of Error
 
 | Function | Syntax | Description |
 |---|---|---|

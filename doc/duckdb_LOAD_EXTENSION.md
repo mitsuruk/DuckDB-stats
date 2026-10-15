@@ -96,8 +96,7 @@ computation of the extension is delegated to it; the extension only adapts SQL r
 #### DuckDB
 
 `cmake/DuckDB_C_CPP.cmake` downloads the DuckDB v1.5.6 source and builds it once into `download/DuckDB/`. The
-extension takes only the headers from that build; the runner and the tests link `libduckdb`. See
-[DuckDB_C_CPPCmake.md](../cmake/DuckDB_C_CPPCmake.md).
+extension takes only the headers from that build; the runner and the tests link `libduckdb`.
 
 ### Provided SQL Functions
 

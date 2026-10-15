@@ -96,7 +96,6 @@ DuckDB-stats/
 
 `cmake/DuckDB_C_CPP.cmake` が DuckDB v1.5.6 のソースを取得し、`download/DuckDB/` に 1 度だけビルドする。
 拡張はそのビルドのヘッダーだけを使い、ランナーとテストは `libduckdb` をリンクする。
-[DuckDB_C_CPPCmake-jp.md](../cmake/DuckDB_C_CPPCmake-jp.md) を参照。
 
 ### 提供する SQL 関数
 

@@ -35,7 +35,6 @@ nav:
       - NULL・NaN・Inf の注意事項: nan_notes-ja.md
       - 組み込み関数との比較: builtin_comparison-ja.md
       - 拡張機能ロードガイド: duckdb_LOAD_EXTENSION-ja.md
-      - statcpp カバレッジ分析: statcpp_coverage_analysis-ja.md
       - 変更履歴: CHANGELOG-ja.md
       - 詳細リファレンス:
           - 基本集約関数: ref/basic_aggregates-ja.md
@@ -50,3 +49,5 @@ markdown_extensions:
   - tables
   - fenced_code
   - codehilite
+  - toc:
+      slugify: !!python/name:markdown.extensions.toc.slugify_unicode
