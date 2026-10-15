@@ -189,6 +189,22 @@ SELECT stat_erf(1.0);           -- -> 0.8427...
 SELECT stat_logarithmic_mean(2, 8);  -- Logarithmic mean
 ```
 
+> **Note (statcpp limitation)**: `stat_lgamma` and `stat_tgamma` return
+> `NULL` for negative non-integer x where Gamma(x) < 0, that is x in
+> (-1, 0), (-3, -2), (-5, -4), ... For x < 0.5, statcpp's `lgamma` uses the
+> reflection formula log(pi / sin(pi x)). On these intervals it takes the log
+> of a negative number and yields NaN, which this extension converts to
+> `NULL`. `tgamma` is computed as exp(`lgamma`), so it cannot return a
+> negative value. Positive x and the intervals where Gamma(x) > 0, such as
+> (-2, -1), are not affected. Zero and negative integers raise an error.
+> For negative arguments, use DuckDB's built-in `gamma` / `lgamma`.
+>
+> ```sql
+> SELECT stat_tgamma(-0.5), gamma(-0.5);   -- -> NULL, -3.5449...
+> SELECT stat_lgamma(-0.5), lgamma(-0.5);  -- -> NULL, 1.2655...
+> SELECT stat_tgamma(-1.5);  -- -> 2.3633... (correct where Gamma(x) > 0)
+> ```
+
 ---
 
 ## Effect Size Conversions
