@@ -133,7 +133,7 @@ SELECT stat_z_test_prop2(45, 100, 55, 120);
 
 | Function | Syntax | Description |
 |---|---|---|
-| `stat_bonferroni` | `stat_bonferroni_scalar(p, m)` | Bonferroni correction (p × m, clamped at 1.0) |
+| `stat_bonferroni_scalar` | `stat_bonferroni_scalar(p, m)` | Bonferroni correction (p × m, clamped at 1.0) |
 
 Adjusts a single p-value when the number of tests `m` is known.
 

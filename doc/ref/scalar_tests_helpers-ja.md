@@ -133,7 +133,7 @@ SELECT stat_z_test_prop2(45, 100, 55, 120);
 
 | 関数 | 構文 | 説明 |
 |---|---|---|
-| `stat_bonferroni` | `stat_bonferroni_scalar(p, m)` | Bonferroni 補正（p × m、1.0 で打ち切り） |
+| `stat_bonferroni_scalar` | `stat_bonferroni_scalar(p, m)` | Bonferroni 補正（p × m、1.0 で打ち切り） |
 
 検定数 `m` が既知の場合に単一の p 値を補正する。
 
