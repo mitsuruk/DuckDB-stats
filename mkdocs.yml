@@ -19,6 +19,7 @@ nav:
   - English:
       - Function Reference: function_reference.md
       - NULL, NaN and Inf Notes: nan_notes.md
+      - Built-in Comparison: builtin_comparison.md
       - Load Extension Guide: duckdb_LOAD_EXTENSION.md
       - Changelog: CHANGELOG.md
       - Detailed Reference:
@@ -32,6 +33,7 @@ nav:
   - 日本語:
       - 関数リファレンス: function_reference-ja.md
       - NULL・NaN・Inf の注意事項: nan_notes-ja.md
+      - 組み込み関数との比較: builtin_comparison-ja.md
       - 拡張機能ロードガイド: duckdb_LOAD_EXTENSION-ja.md
       - statcpp カバレッジ分析: statcpp_coverage_analysis-ja.md
       - 変更履歴: CHANGELOG-ja.md

@@ -238,6 +238,7 @@ Detailed documentation for all 259 functions:
   - [Scalar — Tests & Helpers (38)](doc/ref/scalar_tests_helpers.md)
   - [Scalar — Distributions & Transforms (83)](doc/ref/scalar_distributions.md)
 - [NULL, NaN and Inf Notes](doc/nan_notes.md)
+- [Built-in Comparison](doc/builtin_comparison.md) — vs DuckDB built-ins
 - [DuckDB Loadable Extension Guide](doc/duckdb_LOAD_EXTENSION.md) — how the extension is built and why it uses the C++ API
 
 ## Project Structure
@@ -271,7 +272,8 @@ DuckDB-stats/
 │   ├── nan_notes-ja.md                    # NULL, NaN and Inf notes (Japanese)
 │   ├── duckdb_LOAD_EXTENSION.md           # Extension implementation guide (English)
 │   ├── duckdb_LOAD_EXTENSION-ja.md        # Extension implementation guide (Japanese)
-│   ├── statcpp_coverage_analysis-ja.md    # statcpp coverage analysis (Japanese)
+│   ├── builtin_comparison.md              # Built-in comparison (English)
+│   ├── builtin_comparison-ja.md           # Built-in comparison (Japanese)
 │   ├── CHANGELOG.md                       # Changelog (English)
 │   ├── CHANGELOG-ja.md                    # Changelog (Japanese)
 │   └── ref/                               # Detailed per-category reference (English / Japanese)

@@ -237,6 +237,7 @@ duckdb -unsigned \
   - [スカラー関数 — 検定・補助（38）](doc/ref/scalar_tests_helpers-ja.md)
   - [スカラー関数 — 分布・変換（83）](doc/ref/scalar_distributions-ja.md)
 - [NULL・NaN・Inf の注意事項](doc/nan_notes-ja.md)
+- [組み込み関数との比較](doc/builtin_comparison-ja.md) — DuckDB 組み込みの統計関数との動作の違い
 - [DuckDB ロード可能拡張ガイド](doc/duckdb_LOAD_EXTENSION-ja.md) — 拡張の作り方と C++ API を採用した理由
 
 ## プロジェクト構成
@@ -270,7 +271,8 @@ DuckDB-stats/
 │   ├── nan_notes-ja.md                    # NULL・NaN・Inf の注意事項（日本語版）
 │   ├── duckdb_LOAD_EXTENSION.md           # 拡張機能の実装ガイド（英語版）
 │   ├── duckdb_LOAD_EXTENSION-ja.md        # 拡張機能の実装ガイド（日本語版）
-│   ├── statcpp_coverage_analysis-ja.md    # statcpp カバレッジ分析（日本語）
+│   ├── builtin_comparison.md              # 組み込み関数との比較（英語版）
+│   ├── builtin_comparison-ja.md           # 組み込み関数との比較（日本語版）
 │   ├── CHANGELOG.md                       # 変更履歴（英語版）
 │   ├── CHANGELOG-ja.md                    # 変更履歴（日本語版）
 │   └── ref/                               # カテゴリ別の関数詳細（英語版・日本語版）
