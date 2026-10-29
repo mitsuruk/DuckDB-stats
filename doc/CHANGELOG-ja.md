@@ -11,7 +11,7 @@ DuckDB-stats の変更履歴を記録する。
 - **sqlite3-stats の DuckDB への初回移植。** DuckDB の C++ 拡張 API で作るロード可能拡張
   (`ext_funcs.duckdb_extension`、DuckDB v1.5.6)として提供する。
   sqlite3-stats の全 258 関数を備える。統計処理のコードはそのまま引き継ぎ、
-  R の既定の欠損値処理に従う statcpp v0.5.0 に処理を委ねる。
+  R の既定の欠損値処理に従う statcpp v0.5.1 に処理を委ねる。
 - ウィンドウ関数は DuckDB のカスタムウィンドウコールバックで実装した。結果はパーティションごとに 1 度計算し、
   行ごとに返す。`OVER (ORDER BY ...)` で呼び出し、`PARTITION BY` にも対応する。
 - **`NULL` の SQL の慣例**(sqlite3-stats と同じ):
@@ -65,3 +65,14 @@ DuckDB-stats の変更履歴を記録する。
   `stat_binomial_coef` は実数、`stat_n_*` のサンプルサイズ関数は整数を返す)。
 - 結合テストランナー: デモ [123] と [125] は存在しない列を参照していて、常に失敗していた。
   小さなカテゴリデータのテーブルを使うようにした。
+- **statcpp v0.5.1** で、範囲外読み出し、未定義動作、無限ループを修正した。
+  正しい引数に対する結果は変わらない。結果が未定義だった次の引数は、SQL のエラーになる。
+  - `stat_bin_width()` のデータに Inf がある場合。
+    double の範囲を超える有限の幅は正しく分割するようにした。
+  - `stat_n_t1()`、`stat_n_t2()`、`stat_n_prop()`、`stat_n_moe_prop()`、
+    `stat_n_moe_mean()` で、標本数を表現できない場合(効果量や許容誤差が 0 に近い場合など)。
+  - `stat_poisson_quantile()` と `stat_nbinom_quantile()` のパラメータが無限大の場合。
+
+  `stat_duniform_pmf()`、`stat_duniform_cdf()`、`stat_duniform_quantile()` は、
+  `b - a` が 64 ビット整数をあふれる場合も正しい結果を返す。
+  `stat_beta_rand()` は、形状パラメータが極めて小さい場合もハングしない。

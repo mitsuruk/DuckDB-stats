@@ -11,7 +11,7 @@ This project follows [Semantic Versioning](https://semver.org/).
 - **Initial port of sqlite3-stats to DuckDB** as a loadable extension built with DuckDB's
   C++ extension API (`ext_funcs.duckdb_extension`, DuckDB v1.5.6).
   All 258 functions of sqlite3-stats are provided; the statistical code is carried over
-  unchanged and delegates to statcpp v0.5.0, which follows R's default handling of
+  unchanged and delegates to statcpp v0.5.1, which follows R's default handling of
   missing values.
 - The window functions are implemented with DuckDB's custom window callbacks: the result is
   computed once per partition and returned per row. They are called with
@@ -77,3 +77,17 @@ This project follows [Semantic Versioning](https://semver.org/).
   `stat_binomial_coef` returns a double; the `stat_n_*` sample-size functions return integers).
 - Integration runner: demos [123] and [125] queried columns that do not exist and always failed;
   they now use a small categorical table.
+- **statcpp v0.5.1** fixes out-of-bounds reads, undefined behaviour and a
+  hang. Results for valid arguments are unchanged. Arguments that used to give
+  undefined results now raise an SQL error:
+  - `stat_bin_width()` with Inf in the data. A finite range too wide for a
+    double is now binned correctly;
+  - `stat_n_t1()`, `stat_n_t2()`, `stat_n_prop()`, `stat_n_moe_prop()` and
+    `stat_n_moe_mean()` when the sample size cannot be represented, for
+    example for an effect size or margin of error close to 0;
+  - `stat_poisson_quantile()` and `stat_nbinom_quantile()` with an infinite
+    parameter.
+
+  `stat_duniform_pmf()`, `stat_duniform_cdf()` and `stat_duniform_quantile()`
+  now give correct results when `b - a` overflows a 64-bit integer, and
+  `stat_beta_rand()` no longer hangs for extremely small shape parameters.

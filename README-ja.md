@@ -297,7 +297,7 @@ DuckDB-stats は **statcpp ファミリー** の一部です。用途に応じ�
 | SQL (SQLite3) | [sqlite3-stats](https://github.com/mitsuruk/sqlite3-stats) | SQLite3 ロード可能な拡張機能 (258 関数) |
 | SQL (DuckDB) | **DuckDB-stats** (このリポジトリ) | DuckDB ロード可能な拡張機能 (259 関数) |
 
-**対応 statcpp バージョン**: v0.5.0
+**対応 statcpp バージョン**: v0.5.1
 
 ## 動作確認環境
 

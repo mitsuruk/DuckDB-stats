@@ -298,7 +298,7 @@ DuckDB-stats is part of the **statcpp family**:
 | SQL (SQLite3) | [sqlite3-stats](https://github.com/mitsuruk/sqlite3-stats) | SQLite3 loadable extension (258 functions) |
 | SQL (DuckDB) | **DuckDB-stats** (this repository) | DuckDB loadable extension (259 functions) |
 
-**Compatible statcpp version**: v0.5.0
+**Compatible statcpp version**: v0.5.1
 
 ## Tested Environments
 
