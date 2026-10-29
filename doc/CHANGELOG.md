@@ -91,3 +91,10 @@ This project follows [Semantic Versioning](https://semver.org/).
   `stat_duniform_pmf()`, `stat_duniform_cdf()` and `stat_duniform_quantile()`
   now give correct results when `b - a` overflows a 64-bit integer, and
   `stat_beta_rand()` no longer hangs for extremely small shape parameters.
+- **Integer results above INT64_MAX turned negative**: `stat_n_t1()`,
+  `stat_n_t2()`, `stat_n_prop()`, `stat_n_moe_prop()`, `stat_n_moe_mean()`,
+  `stat_poisson_quantile()`, `stat_geometric_quantile()` and
+  `stat_nbinom_quantile()` cast statcpp's unsigned result straight to a signed
+  64-bit integer, so a result above 9223372036854775807 came back negative
+  (for example `stat_n_moe_mean(1.0, 1.767e9, 0.95)`). Such a result now raises
+  an SQL error.

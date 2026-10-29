@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <stdexcept>
 #include <limits>
 #include <map>
 #include <memory>
@@ -1892,6 +1893,24 @@ static void result_int64(ResultSlot& ctx, std::int64_t v) { ctx.SetInt64(v); }
 static void result_text(ResultSlot& ctx, const std::string& s) { ctx.SetText(s); }
 
 /**
+ * @brief Set an unsigned statcpp result as int64, or raise an error when it does not fit
+ *
+ * statcpp returns counts and sample sizes as unsigned 64-bit integers. SQL integers are
+ * signed, so a value above INT64_MAX would turn negative if cast directly. Such a value
+ * raises an error instead, which invoke_guarded() turns into an SQL error.
+ *
+ * @param ctx Result cell
+ * @param v Unsigned result from statcpp
+ * @throws std::invalid_argument If v is greater than INT64_MAX
+ */
+static void result_uint64_checked(ResultSlot& ctx, std::uint64_t v) {
+    if (v > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
+        throw std::invalid_argument("result is too large for a 64-bit signed integer");
+    }
+    result_int64(ctx, static_cast<std::int64_t>(v));
+}
+
+/**
  * @brief Return a quantile for a distribution with unbounded support, or NULL
  *
  * The Poisson, geometric and negative binomial distributions are unbounded above,
@@ -1905,7 +1924,7 @@ static void result_unbounded_quantile(ResultSlot& ctx, std::uint64_t v) {
     if (v == std::numeric_limits<std::uint64_t>::max()) {
         ctx.SetNull();
     } else {
-        ctx.SetInt64(static_cast<std::int64_t>(v));
+        result_uint64_checked(ctx, v);
     }
 }
 
@@ -3233,7 +3252,7 @@ static void sf_n_t1(ResultSlot& ctx, int /*argc*/, const ArgRow& argv) {
     double es = argv.Double(0);
     double power = argv.Double(1);
     double alpha = argv.Double(2);
-    result_int64(ctx, static_cast<std::int64_t>(statcpp::sample_size_t_test_one_sample(es, power, alpha)));
+    result_uint64_checked(ctx, statcpp::sample_size_t_test_one_sample(es, power, alpha));
 }
 static void sf_power_t2(ResultSlot& ctx, int /*argc*/, const ArgRow& argv) {
     double es = argv.Double(0);
@@ -3246,7 +3265,7 @@ static void sf_n_t2(ResultSlot& ctx, int /*argc*/, const ArgRow& argv) {
     double es = argv.Double(0);
     double power = argv.Double(1);
     double alpha = argv.Double(2);
-    result_int64(ctx, static_cast<std::int64_t>(statcpp::sample_size_t_test_two_sample(es, power, alpha)));
+    result_uint64_checked(ctx, statcpp::sample_size_t_test_two_sample(es, power, alpha));
 }
 static void sf_power_prop(ResultSlot& ctx, int /*argc*/, const ArgRow& argv) {
     double p1 = argv.Double(0);
@@ -3260,7 +3279,7 @@ static void sf_n_prop(ResultSlot& ctx, int /*argc*/, const ArgRow& argv) {
     double p2 = argv.Double(1);
     double power = argv.Double(2);
     double alpha = argv.Double(3);
-    result_int64(ctx, static_cast<std::int64_t>(statcpp::sample_size_prop_test(p1, p2, power, alpha)));
+    result_uint64_checked(ctx, statcpp::sample_size_prop_test(p1, p2, power, alpha));
 }
 
 // --- P7-80..83: Margin of error / sample size estimation ---
@@ -3279,13 +3298,13 @@ static void sf_n_moe_prop(ResultSlot& ctx, int argc, const ArgRow& argv) {
     double moe = argv.Double(0);
     double conf = (argc > 1 && !argv.IsNull(1)) ? argv.Double(1) : 0.95;
     double p_est = (argc > 2 && !argv.IsNull(2)) ? argv.Double(2) : 0.5;
-    result_int64(ctx, static_cast<std::int64_t>(statcpp::sample_size_for_moe_proportion(moe, conf, p_est)));
+    result_uint64_checked(ctx, statcpp::sample_size_for_moe_proportion(moe, conf, p_est));
 }
 static void sf_n_moe_mean(ResultSlot& ctx, int argc, const ArgRow& argv) {
     double moe = argv.Double(0);
     double sigma = argv.Double(1);
     double conf = (argc > 2 && !argv.IsNull(2)) ? argv.Double(2) : 0.95;
-    result_int64(ctx, static_cast<std::int64_t>(statcpp::sample_size_for_moe_mean(moe, sigma, conf)));
+    result_uint64_checked(ctx, statcpp::sample_size_for_moe_mean(moe, sigma, conf));
 }
 
 

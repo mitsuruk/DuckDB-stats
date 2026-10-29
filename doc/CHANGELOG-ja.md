@@ -76,3 +76,8 @@ DuckDB-stats の変更履歴を記録する。
   `stat_duniform_pmf()`、`stat_duniform_cdf()`、`stat_duniform_quantile()` は、
   `b - a` が 64 ビット整数をあふれる場合も正しい結果を返す。
   `stat_beta_rand()` は、形状パラメータが極めて小さい場合もハングしない。
+- **INT64_MAX を超える整数の結果が負になっていた**: `stat_n_t1()`、`stat_n_t2()`、
+  `stat_n_prop()`、`stat_n_moe_prop()`、`stat_n_moe_mean()`、`stat_poisson_quantile()`、
+  `stat_geometric_quantile()`、`stat_nbinom_quantile()` は、statcpp の符号なしの結果を
+  そのまま符号付き 64 ビット整数に変換していたため、9223372036854775807 を超える結果が
+  負の値になっていた(`stat_n_moe_mean(1.0, 1.767e9, 0.95)` など)。SQL のエラーにした。
